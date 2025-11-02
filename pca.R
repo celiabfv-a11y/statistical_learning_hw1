@@ -74,7 +74,7 @@ print(missing_values_imputed)
 data$Var1 = df_skewed_imputed$Var1
 data$Var2 = df_skewed_imputed$Var2
 
-#AI version:
+# AI version:
 library(tidyverse)
 library(stringr)
 library(mice)
