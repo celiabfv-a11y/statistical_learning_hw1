@@ -51,7 +51,7 @@ Among the 20 variables we can find:
   random_notes: Random notes (lorem / ipsum / ###).
   noise_col: Noise column (unrelated random values).
   
-# preprocessing
+# Preprocessing
 
 El preprocesamiento asegura que los datos estén limpios, completos y listos para el análisis.
 Permite detectar errores, NAs y outliers que pueden distorsionar resultados.
