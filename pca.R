@@ -26,7 +26,7 @@ summary(data)
 colSums(is.na(data))
 
 ## Fixed combination of data to get always the same result
-set.seed(123)
+#set.seed(123)
 
 # elegimos SOLO columnas numéricas para imputar con mice
 #vars_imputar <- c("Age","Glucose","Blood_Pressure","BMI", "Oxygen_Saturation",
@@ -78,11 +78,14 @@ idx_out = outlier(data$LengthOfStay, logical = TRUE)
 ### People who spent 19 days in the Hospital are very likely to have Cancer
 data[idx_out, c("Age","Medical.Condition","LengthOfStay")]
 
-ggplot(data, aes(x = LengthOfStay)) + geom_histogram(bins = 30, color = "white") +
+ggplot(data, aes(x = LengthOfStay)) + geom_histogram(bins = 30, color = "white", 
+                                                     fill = "lightblue") +
   labs(title = "Stay distribution", x = "Days")
 
-ggplot(data, aes(x = Age)) + geom_histogram(bins = 30, color = "white") +
+ggplot(data, aes(x = Age)) + geom_histogram(bins = 30, color = "white", 
+                                            fill = "lightblue") +
   labs(title = "Age distribution")
+
 
 # We choose some numeric variables which we consider are related with the 
 # Medical.Condition
