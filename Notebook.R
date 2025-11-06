@@ -58,7 +58,7 @@ Permite detectar errores, NAs y outliers que pueden distorsionar resultados.
 También se incluyen pasos de feature engineering (por ejemplo, convertir género en variable numérica) para que los modelos puedan usar esa información correctamente.
 
 ```{r}
-# Intert your working directory
+# Insert your working directory
 # setwd()
 
 # Used libraries
@@ -227,10 +227,6 @@ mean(err3); sd(err3)
 err_df = data.frame(modelo = factor(rep(c("Model 1","Model 2","Model3"), 
                                         each = B)),
                      mse = c(err1, err2, err3))
-
-# Representation of all MSE as a boxplot
-ggplot(err_df, aes(x = modelo, y = mse, fill = modelo)) + geom_boxplot() +
-  labs(title = "MSE distribution by bootstrap")
 ```
 
 # Principal Component Analysis
