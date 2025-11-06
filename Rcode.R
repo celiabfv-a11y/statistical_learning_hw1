@@ -1,7 +1,6 @@
 setwd("C:/Users/celia/Downloads/Ciencia e Ingeniería de datos/Aprendizaje estadístico/Homework1")
 
 # Used libraries
-library(outliers)
 library(tidyverse)
 library(stringr)
 library(mice)
@@ -26,7 +25,7 @@ summary(data)
 colSums(is.na(data))
 
 ## Fixed combination of data to get always the same result
-#set.seed(123)
+set.seed(123)
 
 # elegimos SOLO columnas numéricas para imputar con mice
 #vars_imputar <- c("Age","Glucose","Blood_Pressure","BMI", "Oxygen_Saturation",
@@ -105,18 +104,18 @@ test  = data[-id_train, ]
 
 # To train the models we used the train set 
 ## Model 1: the simplest 
-mod1 = lm(LengthOfStay ~ Age + Gender + Medical.Condition, data = train)
+mod1 = lm(LengthOfStay ~ Age + Gender, data = train)
 
 ## Model 2: takes into account the most important numeric variables
 mod2 = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
              Physical.Activity + Diet.Score + Stress.Level + Sleep.Hours +
-             Gender + Medical.Condition, data = train)
+             Gender, data = train)
 
 ## Model 3: polynomial model
 mod3 = lm(LengthOfStay ~ poly(Age, 2, raw = TRUE) + poly(BMI, 2, raw = TRUE) +
              Glucose + Blood.Pressure +
-             Gender + Medical.Condition, data = train)
+             Gender, data = train)
 
 summary(mod1)
 summary(mod2)
@@ -133,7 +132,7 @@ mse3 = mean( (test$LengthOfStay - pred3)^2 )
 
 mse1; mse2; mse3
 
-# k means
+# Bootstrap
 B = 200
 err1 = rep(0, B)
 err2 = rep(0, B)
@@ -146,14 +145,14 @@ for (b in 1:B) {
   train_b = train[idx_b, ]
 
   # We use the same models as before
-  m1_b = lm(LengthOfStay ~ Age + Gender + Medical.Condition, data = train_b)
+  m1_b = lm(LengthOfStay ~ Age + Gender, data = train_b)
   m2_b = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
              Physical.Activity + Diet.Score + Stress.Level + Sleep.Hours +
-             Gender + Medical.Condition, data = train_b)
+             Gender, data = train_b)
   m3_b = lm(LengthOfStay ~ poly(Age, 2, raw = TRUE) + poly(BMI, 2, raw = TRUE) +
              Glucose + Blood.Pressure +
-             Gender + Medical.Condition, data = train_b)
+             Gender, data = train_b)
 
   # Prediction on the test set, which is also different each time
   p1_b = predict(m1_b, newdata = test)
@@ -174,8 +173,8 @@ err_df = data.frame(modelo = factor(rep(c("Model 1","Model 2","Model3"),
                      mse = c(err1, err2, err3))
 
 # Representation of all MSE as a boxplot
-ggplot(err_df, aes(x = modelo, y = mse, fill = modelo)) + geom_boxplot() +
-  labs(title = "MSE distribution by bootstrap")
+# ggplot(err_df, aes(x = modelo, y = mse, fill = modelo)) + geom_boxplot() +
+#  labs(title = "MSE distribution by bootstrap")
 
 # We choose the almost the same variables as before, this time we are not using 
 # the LengthOfStay variable
