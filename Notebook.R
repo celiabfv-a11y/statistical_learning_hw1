@@ -58,10 +58,10 @@ Permite detectar errores, NAs y outliers que pueden distorsionar resultados.
 También se incluyen pasos de feature engineering (por ejemplo, convertir género en variable numérica) para que los modelos puedan usar esa información correctamente.
 
 ```{r}
-setwd("C:/Users/celia/Downloads/Ciencia e Ingeniería de datos/Aprendizaje estadístico/Homework1")
+# Intert your working directory
+# setwd()
 
 # Used libraries
-library(outliers)
 library(tidyverse)
 library(stringr)
 library(mice)
@@ -83,10 +83,14 @@ colSums(is.na(data))
 # Fixed combination of data to get always the same result
 set.seed(123)
 
+# Remove NA values
 data = na.omit(data)
+
+# Remove unnecessary variable
 data$noise_col = NULL
 data$random_notes = NULL
 
+# Deal with empty values for given variables
 aux = which(data$Gender == "")
 length(aux)
 data = data[-aux,]
@@ -108,6 +112,8 @@ Por ejemplo, el boxplot muestra valores extremos (pacientes con largas estancias
 ## Getting the outliers for the LengthOfStay variable as it is a good indicator 
 # of health. Less time in a hospital -> better health. The outliers of this 
 # variable are the people whose health is not the best
+# Therefore, we conclude it is enough to check the LengthofStay to know if a
+# person is healthy
 ggplot(data, aes(x = "", y = LengthOfStay)) +
   geom_boxplot(fill = "lightblue", color = "blue", outlier.color = "red", 
                outlier.shape = 16) + labs(title = "Outliers en LengthOfStay")
@@ -127,7 +133,6 @@ ggplot(data, aes(x = Age)) + geom_histogram(bins = 30, color = "white",
                                             fill = "lightblue") +
   labs(title = "Age distribution")
 
-
 # We choose some numeric variables which we consider are related with the 
 # Medical.Condition
 Xnum = data %>%
@@ -135,6 +140,7 @@ Xnum = data %>%
          Triglycerides, HbA1c, Physical.Activity, Diet.Score, Stress.Level, 
          Sleep.Hours, LengthOfStay)
 
+# Correlation between numerical variables previously selected
 GGally::ggcorr(Xnum, label = TRUE, hjust = 0.75)
 ```
 
@@ -154,18 +160,18 @@ test  = data[-id_train, ]
 
 # To train the models we used the train set 
 ## Model 1: the simplest 
-mod1 = lm(LengthOfStay ~ Age + Gender + Medical.Condition, data = train)
+mod1 = lm(LengthOfStay ~ Age + Gender, data = train)
 
 ## Model 2: takes into account the most important numeric variables
 mod2 = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
              Physical.Activity + Diet.Score + Stress.Level + Sleep.Hours +
-             Gender + Medical.Condition, data = train)
+             Gender, data = train)
 
 ## Model 3: polynomial model
 mod3 = lm(LengthOfStay ~ poly(Age, 2, raw = TRUE) + poly(BMI, 2, raw = TRUE) +
              Glucose + Blood.Pressure +
-             Gender + Medical.Condition, data = train)
+             Gender, data = train)
 
 summary(mod1)
 summary(mod2)
@@ -195,14 +201,14 @@ for (b in 1:B) {
   train_b = train[idx_b, ]
 
   # We use the same models as before
-  m1_b = lm(LengthOfStay ~ Age + Gender + Medical.Condition, data = train_b)
+  m1_b = lm(LengthOfStay ~ Age + Gender, data = train_b)
   m2_b = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
              Physical.Activity + Diet.Score + Stress.Level + Sleep.Hours +
-             Gender + Medical.Condition, data = train_b)
+             Gender, data = train_b)
   m3_b = lm(LengthOfStay ~ poly(Age, 2, raw = TRUE) + poly(BMI, 2, raw = TRUE) +
              Glucose + Blood.Pressure +
-             Gender + Medical.Condition, data = train_b)
+             Gender, data = train_b)
 
   # Prediction on the test set, which is also different each time
   p1_b = predict(m1_b, newdata = test)
