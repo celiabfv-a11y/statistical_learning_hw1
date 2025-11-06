@@ -15,9 +15,6 @@ library(bootstrap)
 # Implement the database
 data = read.csv("dirty_v3_path.csv", stringsAsFactors = FALSE)
 
-# pasar nombres con _ como hacemos muchas veces
-# names(data) <- gsub(" ", "_", names(data))
-
 # Preprocessing
 ## See how our data is distributed
 str(data)
@@ -26,13 +23,6 @@ colSums(is.na(data))
 
 ## Fixed combination of data to get always the same result
 set.seed(123)
-
-# elegimos SOLO columnas numéricas para imputar con mice
-#vars_imputar <- c("Age","Glucose","Blood_Pressure","BMI", "Oxygen_Saturation",
-#                  "Cholesterol", "Triglycerides","HbA1c",
-#                  "Physical_Activity","Diet_Score",
-#                  "Stress_Level","Sleep_Hours")
-#datos1 = datos[, c(1, 2, 4, 5, 6, 7, 9, 10, 11, 14, 15, 17, 18)]
 
 ## Cleaning the data
 data = na.omit(data)
@@ -52,16 +42,6 @@ data = data[-aux,]
 ### Refactor: convert string to factors
 #### Males as 0 and Females as 1
 data$Gender = factor(data$Gender, levels = c('Male', 'Female'), labels = c(0, 1))
-
-#imp_obj1 = mice(datos1, method = "rf", m=3)
-##imp_obj <- mice(datos[, vars_imputar], method = "rf", m = 3)
-##imp <- complete(imp_obj)
-# sustituimos en el dataset original
-# datos[, vars_imputar] <- imp
-# para las categóricas con NA, les ponemos una categoría
-#datos$Gender[is.na(datos$Gender)] <- "Unknown"
-#datos$Medical_Condition[is.na(datos$Medical_Condition)] <- "Unknown"
-#colSums(is.na(datos))
 
 ## Getting the outliers for the LengthOfStay variable as it is a good indicator 
 # of health. Less time in a hospital -> better health. The outliers of this 
@@ -171,10 +151,6 @@ mean(err3); sd(err3)
 err_df = data.frame(modelo = factor(rep(c("Model 1","Model 2","Model3"), 
                                         each = B)),
                      mse = c(err1, err2, err3))
-
-# Representation of all MSE as a boxplot
-# ggplot(err_df, aes(x = modelo, y = mse, fill = modelo)) + geom_boxplot() +
-#  labs(title = "MSE distribution by bootstrap")
 
 # We choose the almost the same variables as before, this time we are not using 
 # the LengthOfStay variable
