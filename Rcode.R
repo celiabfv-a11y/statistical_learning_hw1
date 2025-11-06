@@ -165,7 +165,7 @@ X_scaled = scale(X)
 pca_res = prcomp(X_scaled, scale = FALSE)
 summary(pca_res)
 
-fviz_eig(pca_res)
+fviz_eig(pca_res, addlabels = TRUE)
 fviz_pca_var(pca_res, col.var = "contrib", 
              gradient.cols = c("grey80","steelblue","darkblue"), repel = TRUE)
 
