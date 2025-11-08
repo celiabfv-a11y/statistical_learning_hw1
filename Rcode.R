@@ -68,6 +68,19 @@ ggplot(data, aes(x = Age)) +
   geom_histogram(bins = 30, color = "white", fill = "lightblue") +
   labs(title = "Age distribution")
 
+# Bivariate plot: Comparative between stress level and cholesterol:people having 
+# hypertension and cancer are likely to suffer from this, which is interesting 
+# to our target variable.
+ggplot(data = data, aes(x = Stress.Level, y = Cholesterol, color = Medical.Condition)) + 
+  geom_point(alpha = 0.7, size = 2.0) +
+  theme_minimal(base_size = 10) +
+  labs(title = "Relationship between Stress Level and Cholesterol",
+       subtitle = "Colored by Medical Condition",
+       x = "Stress Level",
+       y = "Cholesterol (mg/dL)")+
+  theme(plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(color = "grey30", size = 12))
+
 
 # Correlation matrix -----------------------------------------------------------
 ## Select numeric variables that may be related to LengthOfStay
@@ -163,12 +176,19 @@ X = data %>%
          Triglycerides, HbA1c, Physical.Activity, Diet.Score, Stress.Level, 
          Sleep.Hours)
 
-## Scale the data
+## We scale the data so that all variables contribute equally to PCA.
 X_scaled = scale(X)
 
 ## Principal component analysis
 pca_res = prcomp(X_scaled, scale = FALSE)
 summary(pca_res)
+
+loadings_res = pca_res$rotation[, 1]
+contributions_res = loadings_res^2
+loadings_res = pca_res$rotation[, 2]
+contributions_res = loadings_res^2
+fviz_contrib(pca_res, choice = "var", axes = 1)
+
 fviz_eig(pca_res, addlabels = TRUE) ## Variance explained by component
 fviz_pca_var(pca_res, col.var = "contrib", 
              gradient.cols = c("grey80","steelblue","darkblue"), repel = TRUE)
@@ -197,6 +217,18 @@ fit.kmeans$centers[1:4,]
 fviz_cluster(fit.kmeans, data = X_scaled, geom = "point", ellipse.type = "norm",
              main = "K-means for k = 4")
 
+centers = fit.kmeans$centers
+tidy = cbind(gather(as.data.frame(t(centers)), "cluster", "coor"), 
+             var = rep(colnames(centers, k)), 
+             size = rep(table(fit.kmeans$cluster), each = ncol(centers))
+)
+tidy %>%
+  ggplot(aes(x = cluster, y = coor, fill = cluster)) +
+  geom_col() +
+  facet_wrap(~ var) +
+  geom_text(aes(label = size),
+            position=position_stack(1.2))
+
 ## PAM clustering (Partitioning Around Medoids)
 fit.pam = pam(X_scaled, k = 4)
 fviz_cluster(fit.pam, geom = "point", data = X_scaled, main = "PAM for k = 4")
@@ -206,6 +238,9 @@ res.Mclust = Mclust(X_scaled)
 summary(res.Mclust)
 res.Mclust$G ## Suggested number of clusters
 fviz_mclust(res.Mclust, "classification")
+
+## Choose one of the 3 tried methods
+group = fit.kmeans$cluster
 
 ## Assign the final cluster to the dataset
 data$cluster = group
