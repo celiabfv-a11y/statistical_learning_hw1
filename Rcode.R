@@ -1,6 +1,6 @@
 setwd("C:/Users/celia/Downloads/Ciencia e Ingeniería de datos/Aprendizaje estadístico/Homework1")
 
-# Used libraries
+# Load required libraries
 library(tidyverse)
 library(stringr)
 library(mice)
@@ -12,62 +12,65 @@ library(mclust)
 library(boot)
 library(bootstrap)
 
-# Implement the database
+# Load the dataset
 data = read.csv("dirty_v3_path.csv", stringsAsFactors = FALSE)
 
-# Preprocessing
-## See how our data is distributed
+
+# Preprocessing ----------------------------------------------------------------
+## Inspect the structure and summarize the data
 str(data)
 summary(data)
-colSums(is.na(data))
+colSums(is.na(data)) ## Number of NAs per column
 
-## Fixed combination of data to get always the same result
+## Fix the random seed to ensure reproducibility
 set.seed(123)
 
-## Cleaning the data
+## Remove rows with NA values
 data = na.omit(data)
-### Get rid of unnecessary variables 
+
+## Remove unnecessary variables 
 data$noise_col = NULL
 data$random_notes = NULL
 
-### Get rid of empty inputs 
+## Remove empty rows in categorical variables
 aux = which(data$Gender == "")
-length(aux)
 data = data[-aux,]
-
 aux = which(data$Medical.Condition == "")
-length(aux)
 data = data[-aux,]
 
-### Refactor: convert string to factors
-#### Males as 0 and Females as 1
+## Convert categorical variables to factors (Male = 0, Female = 1)
 data$Gender = factor(data$Gender, levels = c('Male', 'Female'), labels = c(0, 1))
 
-## Getting the outliers for the LengthOfStay variable as it is a good indicator 
-# of health. Less time in a hospital -> better health. The outliers of this 
-# variable are the people whose health is not the best
+
+# Outlier analysis -------------------------------------------------------------
+## Identify outliers for the LengthOfStay variable, as it is a good health 
+## indicator.
+## Less time in the hospital → better health. Outliers represent patients with 
+## worse health.
 ggplot(data, aes(x = "", y = LengthOfStay)) +
   geom_boxplot(fill = "lightblue", color = "blue", outlier.color = "red", 
                outlier.shape = 16) + labs(title = "Outliers en LengthOfStay")
 
-## Index of the outliers in LengthOfStay
+## Based on these results, we decide to use the LengthOfStay variable as the target.
+
+## Index of the outliers
 idx_out = outlier(data$LengthOfStay, logical = TRUE)
 
-## Comparative between the Age, Medical.Condition and LenghtOfStay 
-### People who spent 19 days in the Hospital are very likely to have Cancer
+## Check atypical cases
 data[idx_out, c("Age","Medical.Condition","LengthOfStay")]
 
-ggplot(data, aes(x = LengthOfStay)) + geom_histogram(bins = 30, color = "white", 
-                                                     fill = "lightblue") +
+## Descriptive histograms
+ggplot(data, aes(x = LengthOfStay)) + 
+  geom_histogram(bins = 30, color = "white", fill = "lightblue") +
   labs(title = "Stay distribution", x = "Days")
 
-ggplot(data, aes(x = Age)) + geom_histogram(bins = 30, color = "white", 
-                                            fill = "lightblue") +
+ggplot(data, aes(x = Age)) + 
+  geom_histogram(bins = 30, color = "white", fill = "lightblue") +
   labs(title = "Age distribution")
 
 
-# We choose some numeric variables which we consider are related with the 
-# Medical.Condition
+# Correlation matrix -----------------------------------------------------------
+## Select numeric variables that may be related to LengthOfStay
 Xnum = data %>%
   select(Age, Glucose, Blood.Pressure, BMI, Oxygen.Saturation, Cholesterol, 
          Triglycerides, HbA1c, Physical.Activity, Diet.Score, Stress.Level, 
@@ -75,18 +78,19 @@ Xnum = data %>%
 
 GGally::ggcorr(Xnum, label = TRUE, hjust = 0.75)
 
-# Get a training set from all the data (70%)
+
+# Train/test split -------------------------------------------------------------
 n = nrow(data)
 id_train = sample(1:n, size = round(0.7*n))
 train = data[id_train, ]
-# Get the test set (data which is not in the training set)
 test  = data[-id_train, ]
 
-# To train the models we used the train set 
-## Model 1: the simplest 
+
+# Regression models ------------------------------------------------------------
+## Model 1: the simplest model 
 mod1 = lm(LengthOfStay ~ Age + Gender, data = train)
 
-## Model 2: takes into account the most important numeric variables
+## Model 2: includes the most relevant numeric variables
 mod2 = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
              Physical.Activity + Diet.Score + Stress.Level + Sleep.Hours +
@@ -97,11 +101,12 @@ mod3 = lm(LengthOfStay ~ poly(Age, 2, raw = TRUE) + poly(BMI, 2, raw = TRUE) +
              Glucose + Blood.Pressure +
              Gender, data = train)
 
+## Compare model results
 summary(mod1)
 summary(mod2)
 summary(mod3)
 
-# Predictions for each of the models using the test set
+## Predictions and mean squared error (MSE)
 pred1 = predict(mod1, newdata = test)
 pred2 = predict(mod2, newdata = test)
 pred3 = predict(mod3, newdata = test)
@@ -110,21 +115,19 @@ mse1 = mean( (test$LengthOfStay - pred1)^2 )
 mse2 = mean( (test$LengthOfStay - pred2)^2 )
 mse3 = mean( (test$LengthOfStay - pred3)^2 )
 
-mse1; mse2; mse3
+mse1; mse2; mse3 ## Comparison of mean squared errors
 
-# Bootstrap
+
+# Bootstrap to estimate MSE variability across samples -------------------------
 B = 200
 err1 = rep(0, B)
 err2 = rep(0, B)
 err3 = rep(0, B)
 
 for (b in 1:B) {
-  
-  # Train the model with a different train set each iteration
   idx_b = sample(1:nrow(train), replace = TRUE)
   train_b = train[idx_b, ]
 
-  # We use the same models as before
   m1_b = lm(LengthOfStay ~ Age + Gender, data = train_b)
   m2_b = lm(LengthOfStay ~ Age + Glucose + Blood.Pressure + BMI +
              Oxygen.Saturation + Cholesterol + Triglycerides + HbA1c +
@@ -134,7 +137,6 @@ for (b in 1:B) {
              Glucose + Blood.Pressure +
              Gender, data = train_b)
 
-  # Prediction on the test set, which is also different each time
   p1_b = predict(m1_b, newdata = test)
   p2_b = predict(m2_b, newdata = test)
   p3_b = predict(m3_b, newdata = test)
@@ -144,70 +146,71 @@ for (b in 1:B) {
   err3[b] = mean( (test$LengthOfStay - p3_b)^2 )
 }
 
+## Mean and standard deviation of the errors
 mean(err1); sd(err1)
 mean(err2); sd(err2)
 mean(err3); sd(err3)
 
+## Boxplot of the errors
 err_df = data.frame(modelo = factor(rep(c("Model 1","Model 2","Model3"), 
                                         each = B)),
                      mse = c(err1, err2, err3))
 
-# We choose the almost the same variables as before, this time we are not using 
-# the LengthOfStay variable
+
+# PCA analysis -----------------------------------------------------------------
 X = data %>%
   select(Age, Glucose, Blood.Pressure, BMI, Oxygen.Saturation, Cholesterol, 
          Triglycerides, HbA1c, Physical.Activity, Diet.Score, Stress.Level, 
          Sleep.Hours)
 
-# We scale the data
+## Scale the data
 X_scaled = scale(X)
 
+## Principal component analysis
 pca_res = prcomp(X_scaled, scale = FALSE)
 summary(pca_res)
-
-fviz_eig(pca_res, addlabels = TRUE)
+fviz_eig(pca_res, addlabels = TRUE) ## Variance explained by component
 fviz_pca_var(pca_res, col.var = "contrib", 
              gradient.cols = c("grey80","steelblue","darkblue"), repel = TRUE)
-
-# Color based on Medical.Condition
 fviz_pca_ind(pca_res, geom = "point", habillage = data$Medical.Condition, 
              addEllipses = TRUE)
 
-# We try two different number of factors
-## 3 factors
+
+# Factor analysis --------------------------------------------------------------
 fa3 = factanal(X, factors = 3, scores = "Bartlett", rotation = "varimax")
 fa3
 loadings(fa3)
-
-# 2 factors
 fa2 = factanal(X, factors = 2, scores = "Bartlett", rotation = "varimax")
 fa2
 loadings(fa2)
 
-# We take the same numeric variables as before
+
+# Clustering -------------------------------------------------------------------
+## Evaluate the optimal number of clusters
 fviz_nbclust(X_scaled, kmeans, method = "wss", k.max = 10)
 fviz_nbclust(X_scaled, kmeans, method = "silhouette", k.max = 10)
-fit.kmeans = kmeans(X_scaled, centers = 4, nstart = 25)
 
+## K-means for k = 4
+fit.kmeans = kmeans(X_scaled, centers = 4, nstart = 25)
 fit.kmeans$size
 fit.kmeans$centers[1:4,]
 fviz_cluster(fit.kmeans, data = X_scaled, geom = "point", ellipse.type = "norm",
              main = "K-means for k = 4")
 
+## PAM clustering (Partitioning Around Medoids)
 fit.pam = pam(X_scaled, k = 4)
-fit.pam$clustering[1:20]
 fviz_cluster(fit.pam, geom = "point", data = X_scaled, main = "PAM for k = 4")
+
+## Clustering based on Gaussian mixtures
 res.Mclust = Mclust(X_scaled)
 summary(res.Mclust)
-# Suggested number of groups
-res.Mclust$G
-
+res.Mclust$G ## Suggested number of clusters
 fviz_mclust(res.Mclust, "classification")
-# Choose one of the 3 tried methods
-group = fit.kmeans$cluster
+
+## Assign the final cluster to the dataset
 data$cluster = group
 
-# Now we use the mean values of each variable 
+## Mean values of the variables per cluster
 data %>%
   group_by(cluster) %>%
   summarise(
@@ -220,11 +223,3 @@ data %>%
     Triglycerides = mean(Triglycerides),
     LOS = mean(LengthOfStay)
 )
-
-# Conclusions
-# Preprocesado: el dataset tenía NA en variables clínicas; se imputó con mice(method="rf") como en clase → datos completos.
-#Visualización: LengthOfStay es asimétrica y hay outliers; hay bastantes correlaciones entre las variables metabólicas.
-#Regresión + remuestreo: con 200 bootstraps el modelo grande (M2) suele dar menor MSE que el modelo sencillo; el modelo polinómico (M3) no siempre mejora → podemos hablar de sobreajuste como en la sesión.
-#PCA: 2–3 componentes explican buena parte de la variabilidad y separan el eje metabólico del de estilo de vida.
-#FA: con 3 factores rotados varimax se obtiene una estructura interpretable muy parecida a la del PCA.
-#Clustering: con k=4 aparecen grupos con distinto riesgo metabólico y distinta estancia media → son segmentos útiles.
