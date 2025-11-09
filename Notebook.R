@@ -285,7 +285,7 @@ fa2 = factanal(X, factors = 2, scores = "Bartlett", rotation = "varimax")
 fa2
 loadings(fa2)
 results = cbind(fa3$loadings, fa3$uniquenesses)
-colnames(results) = c("factor1", "factor2","factor3" ,"uniquenesses")
+colnames(results) = c("factor1", "factor2", "factor3", "uniquenesses")
 print(results)
                               
 ```
