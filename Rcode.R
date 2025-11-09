@@ -1,4 +1,5 @@
-setwd("C:/Users/celia/Downloads/Ciencia e Ingeniería de datos/Aprendizaje estadístico/Homework1")
+# Insert your working directory
+# setwd()
 
 # Load required libraries
 library(tidyverse)
